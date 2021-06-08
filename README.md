@@ -92,89 +92,25 @@ function pancakeCall(address _sender, uint256 _amount0, uint256 _amount1, bytes 
 function uniswapV2Call(address _sender, uint256 _amount0, uint256 _amount1, bytes calldata _data) external
 ```
 
-### Boilerplate Snippet
+### Run it
 
-There is no out of the box solution, do your on research.
+Its not a full infrastructure, but a working workflow, if you deploy the contract.
 
-```javascript
-const pairs = [{
-    name: 'BUSD/BNB pancake>panther',
-        tokenBorrow: BUSD_MAINNET,
-        amountTokenPay: 10, // play with 10 BNB
-        tokenPay: BNB_MAINNET,
-        sourceRouter: addresses.pancake.router,
-        targetRouter: addresses.panther.router,
-        sourceFactory: addresses.pancake.factory,
-}];
-
-const onBlock = async (block, web3, provider) => {
-    const start = performance.now();
-
-    const calls = [];
-
-    const flashswap = new web3.eth.Contract(FlashswapApi, FLASHSWAP_CONTRACT);
-
-    pairs.forEach((pair) => {
-        calls.push(async () => {
-            const check = await flashswap.methods.check(pair.tokenBorrow, new BigNumber(pair.amountTokenPay * 1e18), pair.tokenPay, pair.sourceRouter, pair.targetRouter).call();
-
-            const profit = check[0];
-            let s = pair.tokenPay.toLowerCase();
-            const price = prices[s];
-            if (!price) {
-                console.log('invalid price', pair.tokenPay);
-                return;
-            }
-            const profitUsd = profit / 1e18 * price;
-            const percentage = (100 * (profit / 1e18)) / pair.amountTokenPay;
-            console.log(`[${block.number}] [${new Date().toLocaleString()}]: [${provider}] [${pair.name}] Arbitrage opportunity found! Expected profit: ${(profit / 1e18).toFixed(3)} $${profitUsd.toFixed(2)} - ${percentage.toFixed(2)}%`);
-
-            if (profit > 0) {
-                let s = pair.tokenPay.toLowerCase();
-                const price = prices[s];
-                if (!price) {
-                    console.log('invalid price', pair.tokenPay);
-                    return;
-                }
-
-                const profitUsd = profit / 1e18 * price;
-                const percentage = (100 * (profit / 1e18)) / pair.amountTokenPay;
-                console.log(`[${block.number}] [${new Date().toLocaleString()}]: [${provider}] [${pair.name}] Arbitrage opportunity found! Expected profit: ${(profit / 1e18).toFixed(3)} $${profitUsd.toFixed(2)} - ${percentage.toFixed(2)}%`);
-
-                const tx = flashswap.methods.start(
-                    block.number + 2,
-                    pair.tokenBorrow,
-                    new BigNumber(pair.amountTokenPay * 1e18),
-                    pair.tokenPay,
-                    pair.sourceRouter,
-                    pair.targetRouter,
-                    pair.sourceFactory,
-                );
-
-                let estimateGas
-                try {
-                    estimateGas = await tx.estimateGas({from: admin});
-                } catch (e) {
-                    console.log(`[${block.number}] [${new Date().toLocaleString()}]: [${pair.name}]`, 'gasCost error', e.message);
-                    return;
-                }
-
-                const myGasPrice = new BigNumber(gasPrice).plus(gasPrice * 0.2212).toString();
-                const txCostBNB = Web3.utils.toBN(estimateGas) * Web3.utils.toBN(myGasPrice);
-
-                let gasCostUsd = (txCostBNB / 1e18) * prices[BNB_MAINNET.toLowerCase()];
-                const profitMinusFeeInUsd = profitUsd - gasCostUsd;
-
-                if (profitMinusFeeInUsd > 0.6) {
-                    console.log(`[${block.number}] [${new Date().toLocaleString()}] [${provider}]: [${pair.name}] and go: `, JSON.stringify({
-                        profit: "$" + profitMinusFeeInUsd.toFixed(2),
-                        profitWithoutGasCost: "$" + profitUsd.toFixed(2),
-                        gasCost: "$" + gasCostUsd.toFixed(2),
-                        duration: `${(performance.now() - start).toFixed(2)} ms`,
-                        provider: provider,
-                    }));
-                }
-            }
-        })
-    })
+``` bash
+cp env.template .env # replace values inside ".env"
+node watcher.js
 ```
+
+```
+started: wallet 0xXXXX - gasPrice 5000000000 - contract owner: 0xXXXX
+[bsc-ws-node.nariox.org] You are connected on 0xXXXX
+[8124531] [6/8/2021, 7:53:20 PM]: [bsc-ws-node.nariox.org] [BUSD/BNB pancake>panther] Arbitrage checked! Expected profit: -0.015 $-4.99 - -0.15%
+[8124532] [6/8/2021, 7:53:21 PM]: [bsc-ws-node.nariox.org] [BUSD/BNB pancake>panther] Arbitrage checked! Expected profit: -0.015 $-4.99 - -0.15%
+[8124533] [6/8/2021, 7:53:24 PM]: [bsc-ws-node.nariox.org] [BUSD/BNB pancake>panther] Arbitrage checked! Expected profit: -0.014 $-4.71 - -0.14%
+[8124534] [6/8/2021, 7:53:27 PM]: [bsc-ws-node.nariox.org] [BUSD/BNB pancake>panther] Arbitrage checked! Expected profit: -0.014 $-4.61 - -0.14%
+```
+
+#### Hints
+
+ * Designed to have multiple chain connectivities, play with some non public providers to be faster then the public once. Its all designed as "first win"
+ 
