@@ -44,9 +44,17 @@ const pairs = [
 ]
 
 const init = async () => {
+    console.log('starting: ', JSON.stringify(pairs.map(p => p.name)));
+
     const transactionSender = TransactionSender.factory(process.env.WSS_BLOCKS.split(','));
 
+    let nonce = await web3.eth.getTransactionCount(admin);
     let gasPrice = await web3.eth.getGasPrice();
+
+    setInterval(async () => {
+        nonce = await web3.eth.getTransactionCount(admin);
+    }, 1000 * 19);
+
     setInterval(async () => {
         gasPrice = await web3.eth.getGasPrice()
     }, 1000 * 60 * 3);
