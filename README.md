@@ -10,6 +10,10 @@ Basically is usable on the **Binance Smart Chain** and provides callbacks for co
  * https://github.com/yuyasugano/pancake-bakery-arbitrage 
  * https://github.com/Uniswap/uniswap-v2-periphery/blob/master/contracts/examples/ExampleFlashSwap.sol
 
+## Transactions
+
+![transactions](examples-min.png "Transactions failed and success")
+
 ## Improvements
 
 All examples are more or less overengineered for a quick start, so here we have a KISS solution.
