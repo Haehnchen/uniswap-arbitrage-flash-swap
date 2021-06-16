@@ -3,7 +3,6 @@ const Web3 = require('web3');
 const BigNumber = require('bignumber.js');
 const {performance} = require('perf_hooks');
 
-const { mainnet: addresses } = require('./addresses');
 const FlashswapApi = require('./abis/index').flashswapv2;
 const BlockSubscriber = require('./src/block_subscriber');
 const Prices = require('./src/prices');
@@ -11,6 +10,15 @@ const Prices = require('./src/prices');
 let FLASHSWAP_CONTRACT = process.env.CONTRACT;
 
 const TransactionSender = require('./src/transaction_send');
+
+const fs = require('fs');
+const util = require('util');
+var log_file = fs.createWriteStream(__dirname + '/log_arbitrage.txt', { flags: 'w' });
+var log_stdout = process.stdout;
+console.log = function (d) {
+    log_file.write(util.format(d) + '\n');
+    log_stdout.write(util.format(d) + '\n');
+};
 
 const web3 = new Web3(
     new Web3.providers.WebsocketProvider(process.env.WSS_BLOCKS, {
@@ -25,23 +33,10 @@ const web3 = new Web3(
 
 const { address: admin } = web3.eth.accounts.wallet.add(process.env.PRIVATE_KEY);
 
-const BNB_MAINNET = '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c';
-const BUSD_MAINNET = '0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56';
-
 const prices = {};
 const flashswap = new web3.eth.Contract(FlashswapApi, FLASHSWAP_CONTRACT);
 
-const pairs = [
-    {
-        name: 'BUSD/BNB pancake>panther',
-        tokenBorrow: BUSD_MAINNET,
-        amountTokenPay: 10,
-        tokenPay: BNB_MAINNET,
-        sourceRouter: addresses.pancake.router,
-        targetRouter: addresses.panther.router,
-        sourceFactory: addresses.pancake.factory,
-    }
-]
+const pairs = require('./src/pairs').getPairs();
 
 const init = async () => {
     console.log('starting: ', JSON.stringify(pairs.map(p => p.name)));
